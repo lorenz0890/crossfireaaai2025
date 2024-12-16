@@ -1,0 +1,57 @@
+image: samirmoustafa/pyg-cpu
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  VERSION: "0.0.1"
+
+cache:
+  paths:
+    - "$CI_PROJECT_DIR/.cache/pip"
+
+stages:
+  - build
+  - static-analysis
+  - test
+
+
+build:
+  stage: build
+  script:
+    - python --version
+    - python scripts/cuda_availability.py
+    - export PYTHONPATH="`pwd`/:${PYTHONPATH}"
+    - chmod +x scripts/linux_system_info.sh
+    - echo "scripts/linux_system_info.sh" >> ~/.profile
+    - source ~/.profile
+
+black:
+  stage: static-analysis
+  script:
+    - pip install black
+    - python -m black -l 120 ./pyq --diff
+
+isort:
+  stage: static-analysis
+  script:
+    - pip install isort
+    - python -m isort --diff ./pyq
+
+flake8:
+  stage: static-analysis
+  script:
+    - pip install flake8
+    - python -m flake8 --max-line-length=120 ./pyq
+
+unit:
+  stage: test
+  script:
+    - pip install .
+    - pip install nose
+    - cd test/unit && nosetests
+
+integration:
+  stage: test
+  script:
+    - pip install .
+    - pip install nose
+    - cd test/integration && nosetests

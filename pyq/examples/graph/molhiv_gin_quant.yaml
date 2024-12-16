@@ -1,0 +1,51 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: ogbg-molhiv
+  name: ogbg-molhiv
+y_transform:
+  type:
+    class_name: $float32
+model:
+  class_name: GraphIsomorphismNetwork
+  module_use_atom_encoder: True
+  module_global_pool: mean
+  module_num_layers: 2
+  hidden_channels: 512
+  in_channels: 100
+  out_channels: 1
+layer_wrapper:
+  class_name: $GenericLayerQuantizerWrapper
+  quantizer_function:
+    class_name: LSQQuantizeFunction
+  initializer:
+    class_name: LsqInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: LSQQuantizeFunction
+  initializer:
+    class_name: LsqInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+    is_positive: True
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+losses:
+  - class_name: BCEWithLogitsLoss
+metrics:
+  - class_name: AUROC
+training_loop:
+  epoch: 1000
+optimizer:
+  lr: 1e-5

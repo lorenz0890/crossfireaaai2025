@@ -1,0 +1,60 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: Planetoid
+  name: Cora
+model:
+  class_name: GraphConvolutionalNetwork
+  in_channels: 1433
+  out_channels: 7
+  hidden_channels: 128
+  num_layers: 3
+layer_wrapper:
+  class_name: $GenericLayerQuantizerWrapper
+  quantizer_function:
+    class_name: LSQQuantizeFunction
+  initializer:
+    class_name: LsqInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: LSQQuantizeFunction
+  initializer:
+    class_name: LsqInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+    is_positive: True
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+  skip_layer_by_type:
+    - class_name: $BatchNorm1d
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+  - class_name: F1Score
+    num_classes: 7
+  - class_name: CohenKappa
+    num_classes: 7
+  - class_name: AUROC
+    num_classes: 7
+training_loop:
+  epoch: 300
+optimizer:
+  class_name: $Adam
+  lr: 0.001
+scheduler:
+  class_name: $OneCycleLR
+  epochs: 300
+  max_lr: 0.01
+  steps_per_epoch: 100

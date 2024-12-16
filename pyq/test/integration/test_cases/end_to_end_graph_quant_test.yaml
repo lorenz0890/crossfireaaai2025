@@ -1,0 +1,68 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: Planetoid
+  name: Cora
+dataloader:
+  batch_size: 1024
+model:
+  class_name: GraphConvolutionalNetwork
+  in_channels: 1433
+  out_channels: 7
+  hidden_channels: 64
+  num_layers: 2
+  heads: 4
+layer_wrapper:
+  class_name: $CommunicationGraphQuantizerWrapper
+  quantizer_function:
+    class_name: STEQuantizeFunction
+  initializer:
+    class_name: MinMaxInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+  communication_quantizer_function:
+    class_name: STEQuantizeFunction
+  communication_initializer:
+    class_name: MinMaxInitializer
+  communication_range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: STEQuantizeFunction
+  initializer:
+    class_name: MinMaxInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+    is_positive: True
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+  skip_layer_by_type:
+    - class_name: $BatchNorm1d
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+training_loop:
+  class_name: $TrainingLoop
+  epoch: 1
+  callbacks:
+    - class_name: LearningRateMonitor
+      logging_interval: epoch
+      log_momentum: True
+  number_of_gpus: 1
+optimizer:
+  class_name: $Adam
+  lr: 0.001
+scheduler:
+  class_name: $OneCycleLR
+  epochs: 1
+  max_lr: 0.01
+  steps_per_epoch: 100

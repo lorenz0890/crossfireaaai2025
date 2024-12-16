@@ -1,0 +1,78 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: Planetoid
+  name: Cora
+  transform:
+    class_name: ProbabilityMaskMaker
+    low_probability: 0.0
+    high_probability: 0.1
+    process_graph_function:
+      class_name: $in_degree_mask
+dataloader:
+  batch_size: 8
+model_editor:
+  class_name: $TorchModelEditor
+  argument_names_to_be_inserted_in_forward:
+    - "computed_mask"
+  instance_names_as_regex_to_be_updated_in_forward:
+    - "convs"
+    - "convs\\[i\\]"
+  lines_of_code_to_be_inserted_inside_forward:
+    - "import torch.nn.functional as F"
+    - "from torch_geometric.typing import OptTensor"
+  update_nested_instance:
+    - "convs"
+model:
+  class_name: GraphAttentionNetwork
+  in_channels: 1433
+  out_channels: 7
+  hidden_channels: 8
+  num_layers: 2
+  heads: 8
+layer_wrapper:
+  class_name: $SamplerCommunicationGraphQuantizerWrapper
+  reconstruct_self_loops_in_communication: True
+  communication_probability_to_mask_function:
+    class_name: $bernoulli_probability_to_mask
+  quantizer_function:
+    class_name: STEOffsetQuantizeFunction
+  initializer:
+    class_name: MinMaxOffsetInitializer
+  range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 2
+    momentum: 0.01
+  communication_quantizer_function:
+    class_name: STEQuantizeFunction
+  communication_initializer:
+    class_name: MinMaxInitializer
+  communication_range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 2
+    momentum: 0.01
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: STEQuantizeFunction
+  initializer:
+    class_name: PACTInitializer
+  range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 2
+    momentum: 0.01
+    is_positive: True
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+training_loop:
+  epoch: 500

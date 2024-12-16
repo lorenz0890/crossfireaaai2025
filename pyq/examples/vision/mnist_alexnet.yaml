@@ -1,0 +1,55 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: MNIST
+  train_transform:
+    class_name: Compose
+    transforms:
+      - class_name: Resize
+        size: (72, 72)
+      - class_name: RandomCrop
+        size: (64, 64)
+        padding: 4
+      - class_name: ToTensor
+      - class_name: Lambda
+        lambd: "lambda x: __import__('torch').cat([x, x, x], 0)"
+      - class_name: Normalize
+        mean: (0.5, 0.5, 0.5)
+        std: (1, 1, 1)
+  test_transform:
+    class_name: Compose
+    transforms:
+      - class_name: Resize
+        size: (64, 64)
+      - class_name: ToTensor
+      - class_name: Lambda
+        lambd: "lambda x: __import__('torch').cat([x, x, x], 0)"
+      - class_name: Normalize
+        mean: (0.5, 0.5, 0.5)
+        std: (1, 1, 1)
+model:
+  class_name: AlexNet
+  num_classes: 10
+  pretrained: True
+task:
+  class_name: ImageTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+training_loop:
+  epoch: 20
+  # options for precision FP (64, 32, 16, bf16)
+  #precision: 16
+  deterministic: False
+  #use_profiler: True
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+optimizer:
+  class_name: $Adam
+  lr: 1e-2
+scheduler:
+  class_name: $OneCycleLR
+  epochs: 20
+  max_lr: 1e-2
+  steps_per_epoch: 100

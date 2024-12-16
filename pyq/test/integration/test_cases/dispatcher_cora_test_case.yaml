@@ -1,0 +1,41 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: Planetoid
+  name: Cora
+dataloader:
+  batch_size: 1024
+  shuffle: True
+  num_workers: 4
+model:
+  class_name: GCN
+  in_channels: 1433
+  out_channels: 7
+  hidden_channels: 128
+  num_layers: 1
+layer_wrapper:
+  class_name: $TorchModuleWrapper
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  skip_layer_by_type:
+    - class_name: $ModuleList
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+  - class_name: CrossEntropyLoss
+optimizer:
+  class_name: $SGD
+  lr: 0.01
+  momentum: 0.9
+scheduler:
+  class_name: $StepLR
+  step_size: 10
+training_loop:
+  class_name: $TrainingLoop
+  epoch: 1
+  use_profiler: False
+  number_of_gpus: 1

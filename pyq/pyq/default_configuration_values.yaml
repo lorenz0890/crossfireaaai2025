@@ -1,0 +1,40 @@
+y_transform: {}
+dataloader:
+  batch_size: 1024
+layer_wrapper:
+  class_name: $TorchModuleWrapper
+activation_wrapper:
+  class_name: $TorchModuleWrapper
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+  skip_layer_by_type:
+    - class_name: $Aggregation
+    - class_name: $BasicBlock
+    - class_name: $BasicGNN
+    - class_name: $Sequential
+    - class_name: $ModuleDict
+    - class_name: $ModuleList
+loss_coefficient:
+  class_name: tensor
+  data: 0
+losses:
+  class_name: tuple
+teacher_losses:
+  class_name: tuple
+metrics:
+  class_name: tuple
+training_loop:
+  class_name: $TrainingLoop
+  epoch: 100
+  callbacks:
+    - class_name: LearningRateMonitor
+      logging_interval: epoch
+      log_momentum: True
+  number_of_gpus: 1
+optimizer:
+  class_name: $Adam
+  lr: 0.01
+scheduler:
+  class_name: $ConstantLR

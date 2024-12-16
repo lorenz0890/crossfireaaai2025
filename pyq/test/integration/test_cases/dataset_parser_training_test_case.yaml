@@ -1,0 +1,13 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: MNIST
+  transform:
+    class_name: ToTensor
+model:
+  class_name: ConvNet
+  in_channels: 1
+  out_channels: 10
+parser:
+  class_name: TorchModelParser
+  callable_object:
+    class_name: $TorchModuleWrapper

@@ -1,0 +1,41 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: TUDataset
+  name: REDDIT-BINARY
+  split_ratio: 1.
+  transform:
+    class_name: NormalizedDegree
+    mean: 2.317
+    std: 20.66
+kfold:
+  class_name: GraphDataKFold
+  n_splits: 10
+model:
+  class_name: GraphIsomorphismNetwork
+  module_global_pool: add
+  module_use_mlp_output: True
+  in_channels: 1
+  out_channels: 2
+  hidden_channels: 64
+  train_eps: True
+parser:
+  skip_parsing: True
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+training_loop:
+  epoch: 200
+optimizer:
+  class_name: $Adam
+  lr: 0.005
+  weight_decay: 0.0002
+scheduler:
+  class_name: $StepLR
+  step_size: 50
+  gamma: 0.5

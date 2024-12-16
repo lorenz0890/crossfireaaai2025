@@ -1,0 +1,79 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: CIFAR10
+  train_transform:
+    class_name: Compose
+    transforms:
+      - class_name: Resize
+        size: (72, 72)
+      - class_name: RandomCrop
+        size: (64, 64)
+        padding: 4
+      - class_name: RandomHorizontalFlip
+      - class_name: ToTensor
+      - class_name: Normalize
+        mean: (0.485, 0.456, 0.406)
+        std: (0.229, 0.224, 0.225)
+  test_transform:
+    class_name: Compose
+    transforms:
+      - class_name: Resize
+        size: (72, 72)
+      - class_name: ToTensor
+      - class_name: Normalize
+        mean: (0.485, 0.456, 0.406)
+        std: (0.229, 0.224, 0.225)
+model:
+  class_name: ResNet18
+  num_classes: 10
+  pretrained: True
+layer_wrapper:
+  class_name: $TransformationLayerQuantizerWrapper
+  quantizer_function:
+    class_name: LSQQuantizeFunction
+  initializer:
+    class_name: LsqInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 8
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: LSQQuantizeFunction
+  initializer:
+    class_name: LsqInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 8
+    is_positive: True
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+  remove_layers_bias: True
+  skip_layer_by_regex:
+    - "^conv1$"
+    - "^relu$"
+    - "^fc$"
+  skip_layer_by_type:
+    - class_name: $AdaptiveAvgPool2d
+    - class_name: $MaxPool2d
+  delete_layer_by_type:
+    - class_name: $BatchNorm2d
+task:
+  class_name: ImageTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+optimizer:
+  class_name: $Adam
+  lr: 1e-4
+scheduler:
+  class_name: $OneCycleLR
+  epochs: 80
+  max_lr: 1e-3
+  steps_per_epoch: 100

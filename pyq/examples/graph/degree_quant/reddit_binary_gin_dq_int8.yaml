@@ -1,0 +1,103 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: TUDataset
+  name: REDDIT-BINARY
+  split_ratio: 1.
+  transform:
+    class_name: Compose
+    transforms:
+      - class_name: NormalizedDegree
+        mean: 2.317
+        std: 20.66
+      - class_name: ProbabilityMaskMaker
+        low_probability: 0.0
+        high_probability: 0.2
+        process_graph_function:
+          class_name: $in_degree_mask
+dataloader:
+  batch_size: 128
+kfold:
+  class_name: GraphDataKFold
+  n_splits: 10
+model:
+  class_name: GraphIsomorphismNetwork
+  module_global_pool: mean
+  module_use_mlp_output: True
+  in_channels: 1
+  out_channels: 2
+  num_layers: 5
+  hidden_channels: 64
+  train_eps: True
+model_editor:
+  class_name: $TorchModelEditor
+  argument_names_to_be_inserted_in_forward:
+    - "computed_mask"
+  instance_names_as_regex_to_be_updated_in_forward:
+    - "convs"
+    - "convs\\[i\\]"
+  lines_of_code_to_be_inserted_inside_forward:
+    - "import torch.nn.functional as F"
+    - "from torch_geometric.typing import OptTensor"
+  update_nested_instance:
+    - "convs"
+layer_wrapper:
+  class_name: $SamplerCommunicationGraphQuantizerWrapper
+  communication_probability_to_mask_function:
+    class_name: $bernoulli_probability_to_mask
+  quantizer_function:
+    class_name: STEQuantizeFunction
+  initializer:
+    class_name: MinMaxInitializer
+  range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 8
+    momentum: 0.01
+    percentile: 0.001
+  communication_quantizer_function:
+    class_name: STEQuantizeFunction
+  communication_initializer:
+    class_name: MinMaxInitializer
+  communication_range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 8
+    momentum: 0.01
+    percentile: 0.001
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: STEQuantizeFunction
+  initializer:
+    class_name: MinMaxInitializer
+  range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 8
+    is_positive: True
+    momentum: 0.01
+    percentile: 0.001
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+  skip_layer_by_type:
+    - class_name: $MLP
+    - class_name: $Dropout
+    - class_name: $BatchNorm1d
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+training_loop:
+  epoch: 200
+optimizer:
+  class_name: $Adam
+  lr: 0.005
+  weight_decay: 0.0002
+scheduler:
+  class_name: $StepLR
+  step_size: 50
+  gamma: 0.5

@@ -1,0 +1,55 @@
+# used two gpus (Tesla P100-PCIE-12GB) to get around 70% accuracy
+dataset:
+  class_name: DataInitializer
+  dataset_name: ImageNet
+  root: /data/samirm97cs/datasets/imagenet/
+  train_transform:
+    class_name: Compose
+    transforms:
+    - class_name: Resize
+      size: (256, 256)
+    - class_name: RandomCrop
+      padding: 4
+      size: (224, 224)
+    - class_name: RandomRotation
+      degrees: 20
+    - class_name: RandomHorizontalFlip
+      p: 0.5
+    - class_name: ToTensor
+    - class_name: Normalize
+      mean: (0.4802, 0.4481, 0.3975)
+      std: (0.2302, 0.2265, 0.2262)
+  test_transform:
+    class_name: Compose
+    transforms:
+    - class_name: Resize
+      size: (224, 224)
+    - class_name: ToTensor
+    - class_name: Normalize
+      mean: (0.4802, 0.4481, 0.3975)
+      std: (0.2302, 0.2265, 0.2262)
+dataloader:
+  batch_size: 256
+  num_workers: 8
+  pin_memory: True
+model:
+  class_name: ResNet18
+  pretrained: True
+task:
+  class_name: ImageTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+optimizer:
+  class_name: $SGD
+  lr: 0.01
+  momentum: 0.9
+  weight_decay: 4e-5
+scheduler:
+  class_name: $MultiStepLR
+  milestones: (10, 30, 90)
+  gamma: 0.1

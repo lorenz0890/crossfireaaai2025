@@ -1,0 +1,33 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: ogbg-molhiv
+  name: ogbg-molhiv
+dataloader:
+  batch_size: 1024
+y_transform:
+  type:
+    class_name: $float32
+model:
+  class_name: GraphAttentionNetwork
+  module_use_atom_encoder: True
+  module_global_pool: mean
+  module_num_layers: 2
+  hidden_channels: 300
+  in_channels: 300
+  heads: 8
+  out_channels: 1
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+parser:
+  skip_parsing: True
+losses:
+  - class_name: BCEWithLogitsLoss
+metrics:
+  - class_name: AUROC
+training_loop:
+  epoch: 1000
+optimizer:
+  lr: 1e-2

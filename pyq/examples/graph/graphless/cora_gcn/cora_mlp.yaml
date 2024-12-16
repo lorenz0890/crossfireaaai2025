@@ -1,0 +1,27 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: Planetoid
+  name: Cora
+model:
+  class_name: MultiLayerPerceptron
+  in_channels: 1433
+  out_channels: 7
+  hidden_channels: 128
+  num_layers: 2
+  dropout: 0.2
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+parser:
+  skip_parsing: True
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+training_loop:
+  epoch: 150
+optimizer:
+  class_name: $Adam
+  lr: 0.01

@@ -1,0 +1,58 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: ImageFolder
+  root: ./datasets/tiny-imagenet-200/
+  train_transform:
+    class_name: Compose
+    transforms:
+      - class_name: RandomRotation
+        degrees: 20
+      - class_name: RandomHorizontalFlip
+        p: 0.5
+      - class_name: ToTensor
+      - class_name: Normalize
+        mean: (0.4802, 0.4481, 0.3975)
+        std: (0.2302, 0.2265, 0.2262)
+  test_transform:
+    class_name: Compose
+    transforms:
+      - class_name: ToTensor
+      - class_name: Normalize
+        mean: (0.4802, 0.4481, 0.3975)
+        std: (0.2302, 0.2265, 0.2262)
+dataloader:
+  batch_size: 512
+  shuffle: True
+  num_workers: 8
+  pin_memory: True
+model:
+  class_name: MobileNetV2
+  num_classes: 200
+  pretrained: True
+task:
+  class_name: ImageTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+training_loop:
+  epoch: 12
+  deterministic: False
+  use_profiler: False
+optimizer:
+  class_name: $SGD
+  lr: 0.01
+  momentum: 0.9
+  nesterov: True
+  weight_decay: 4e-5
+scheduler:
+  class_name: $CyclicLR
+  base_lr: 1e-5
+  max_lr: 1
+  mode: triangular2
+  cycle_momentum: False
+  # step_size = epochs-per-step * len(train_loader) // epochs-per-step recommended: [2, 10]
+  step_size_up: 10 * 216

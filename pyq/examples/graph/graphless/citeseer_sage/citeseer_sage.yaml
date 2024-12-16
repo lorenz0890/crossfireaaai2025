@@ -1,0 +1,24 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: Planetoid
+  name: CiteSeer
+model:
+  class_name: SampleAndAggregateGraph
+  in_channels: 3703
+  out_channels: 6
+  hidden_channels: 128
+  num_layers: 2
+  normalize: True
+parser:
+  skip_parsing: True
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+training_loop:
+  epoch: 150

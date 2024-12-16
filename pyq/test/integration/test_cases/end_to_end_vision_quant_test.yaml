@@ -1,0 +1,91 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: ImageFolder
+  root: ./test_images
+  train_transform:
+    class_name: Compose
+    transforms:
+      - class_name: RandomRotation
+        degrees: 20
+      - class_name: RandomHorizontalFlip
+        p: 0.5
+      - class_name: ToTensor
+      - class_name: Normalize
+        mean: (0.4802, 0.4481, 0.3975)
+        std: (0.2302, 0.2265, 0.2262)
+      - class_name: Resize
+        size: (72, 72)
+      - class_name: RandomCrop
+        size: (64, 64)
+        padding: 4
+  test_transform:
+    class_name: Compose
+    transforms:
+      - class_name: ToTensor
+      - class_name: Normalize
+        mean: (0.4802, 0.4481, 0.3975)
+        std: (0.2302, 0.2265, 0.2262)
+      - class_name: Resize
+        size: (64, 64)
+model:
+  class_name: AlexNet
+  num_classes: 10
+  pretrained: True
+layer_wrapper:
+  class_name: $TransformationLayerQuantizerWrapper
+  quantizer_function:
+    class_name: STEQuantizeFunction
+  initializer:
+    class_name: MinMaxInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: STEQuantizeFunction
+  initializer:
+    class_name: MinMaxInitializer
+  range_observer:
+    class_name: UniformRangeObserver
+    bits: 2
+    is_positive: True
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+  remove_layers_bias: True
+  skip_layer_by_regex:
+    - "^features.0$"
+    - "^features.1$"
+    - "^classifier.6$"
+  skip_layer_by_type:
+    - class_name: $Dropout
+    - class_name: $MaxPool2d
+    - class_name: $AdaptiveAvgPool2d
+task:
+  class_name: ImageTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+training_loop:
+  class_name: $TrainingLoop
+  epoch: 1
+  deterministic: False
+  callbacks:
+    - class_name: LearningRateMonitor
+      logging_interval: epoch
+      log_momentum: True
+  number_of_gpus: 1
+losses:
+  - class_name: CrossEntropyLoss
+metrics:
+  - class_name: Accuracy
+optimizer:
+  class_name: $Adam
+  lr: 1e-2
+scheduler:
+  class_name: $OneCycleLR
+  epochs: 1
+  max_lr: 1e-2
+  steps_per_epoch: 100

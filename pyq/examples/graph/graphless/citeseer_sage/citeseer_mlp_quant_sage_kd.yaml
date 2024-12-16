@@ -1,0 +1,59 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: Planetoid
+  name: CiteSeer
+  train_on_all_sets: True
+model:
+  class_name: MultiLayerPerceptron
+  in_channels: 3703
+  out_channels: 6
+  hidden_channels: 128
+  num_layers: 2
+  dropout: 0.2
+teacher_model:
+  class_name: ModelReader
+  directory: "...path.for.teacher.model.../torch_model.pth"
+layer_wrapper:
+  class_name: $TransformationLayerQuantizerWrapper
+  quantizer_function:
+    class_name: STEOffsetQuantizeFunction
+  initializer:
+    class_name: MinMaxOffsetInitializer
+  range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 8
+    momentum: 0.01
+    percentile: 0.001
+activation_wrapper:
+  class_name: $ActivationQuantizerWrapper
+  quantizer_function:
+    class_name: STEOffsetQuantizeFunction
+  initializer:
+    class_name: MinMaxOffsetInitializer
+  range_observer:
+    class_name: MomentumMinMaxUniformRangeObserver
+    bits: 8
+    is_positive: True
+    momentum: 0.01
+    percentile: 0.001
+parser:
+  class_name: TorchModelParser
+  callable_object: /layer_wrapper
+  callable_object_for_nonparametric: /activation_wrapper
+  skip_layer_by_type:
+    - class_name: $BatchNorm
+    - class_name: $BatchNorm1d
+task:
+  class_name: GraphTask
+  task_name: classification
+  model: /model
+  dataset: /dataset
+teacher_losses:
+  - class_name: KLDivLoss
+    reduction: "batchmean"
+    log_target: True
+metrics:
+  - class_name: Accuracy
+training_loop:
+  class_name: $DistilledTrainingLoop
+  epoch: 150

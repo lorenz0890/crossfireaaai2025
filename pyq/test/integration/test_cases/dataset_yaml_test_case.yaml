@@ -1,0 +1,9 @@
+dataset:
+  class_name: DataInitializer
+  dataset_name: ogbn-arxiv
+  name: ogbn-arxiv
+  transform:
+    class_name: Compose
+    transforms:
+    - class_name: NormalizeFeatures
+    - class_name: GCNNorm
